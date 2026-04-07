@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FileSure — Company Records</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.3rem; font-weight: 600; }
+    header span { font-size: 0.85rem; opacity: 0.6; }
+
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      padding: 16px 32px;
+      flex-wrap: wrap;
+    }
+    .summary-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 20px;
+      min-width: 130px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .summary-card .label { font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+    .summary-card .value { font-size: 1.5rem; font-weight: 700; margin-top: 2px; }
+    .summary-card.active .value   { color: #16a34a; }
+    .summary-card.strikeoff .value{ color: #dc2626; }
+    .summary-card.liq .value      { color: #d97706; }
+    .summary-card.dormant .value  { color: #6366f1; }
+    .summary-card.total .value    { color: #1a1a2e; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      padding: 0 32px 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .controls label { font-size: 0.78rem; color: #555; display: flex; flex-direction: column; gap: 4px; }
+    .controls input, .controls select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #fff;
+      min-width: 160px;
+    }
+    .controls button {
+      padding: 8px 18px;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      align-self: flex-end;
+    }
+    .controls button.reset {
+      background: #fff;
+      color: #1a1a2e;
+      border: 1px solid #ddd;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      padding: 0 32px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      font-size: 0.85rem;
+    }
+    th {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 11px 14px;
+      text-align: left;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8f9fc; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge.Active        { background: #dcfce7; color: #15803d; }
+    .badge.StrikeOff     { background: #fee2e2; color: #b91c1c; }
+    .badge.UnderLiquidation { background: #fef3c7; color: #b45309; }
+    .badge.Dormant       { background: #ede9fe; color: #5b21b6; }
+    .badge.other         { background: #f1f5f9; color: #475569; }
+
+    .flag { color: #dc2626; font-size: 0.7rem; }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 32px;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .pagination button {
+      padding: 5px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination .info { flex: 1; }
+
+    #status-msg {
+      padding: 20px 32px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>FileSure</h1>
+  <span>Company Records</span>
+</header>
+
+<div class="summary-bar" id="summary-bar">
+  <!-- filled by JS -->
+</div>
+
+<div class="controls">
+  <label>Status
+    <select id="filter-status">
+      <option value="">All statuses</option>
+      <option>Active</option>
+      <option>Strike Off</option>
+      <option>Under Liquidation</option>
+      <option>Dormant</option>
+    </select>
+  </label>
+  <label>State
+    <input id="filter-state" type="text" placeholder="e.g. Maharashtra" />
+  </label>
+  <button onclick="search()">Search</button>
+  <button class="reset" onclick="reset()">Reset</button>
+</div>
+
+<div class="table-wrap">
+  <div id="status-msg">Loading…</div>
+  <table id="company-table" style="display:none">
+    <thead>
+      <tr>
+        <th>S.No.</th>
+        <th>CIN</th>
+        <th>Company Name</th>
+        <th>Status</th>
+        <th>State</th>
+        <th>Inc. Date</th>
+        <th>Director 1</th>
+        <th>Director 2</th>
+        <th>Paid-up Capital (₹)</th>
+        <th>Last Filing</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+<div class="pagination">
+  <button id="btn-prev" onclick="changePage(-1)" disabled>← Prev</button>
+  <span class="info" id="page-info"></span>
+  <button id="btn-next" onclick="changePage(1)">Next →</button>
+</div>
+
+<script>
+  const API = "http://localhost:3000";
+  let currentPage = 1;
+  let currentStatus = "";
+  let currentState = "";
+  const LIMIT = 15;
+
+  // Summary 
+  async function loadSummary() {
+    try {
+      const res = await fetch(`${API}/companies/summary`);
+      const data = await res.json();
+      const bar = document.getElementById("summary-bar");
+      const labelMap = {
+        "Active": ["active", "Active"],
+        "Strike Off": ["strikeoff", "Strike Off"],
+        "Under Liquidation": ["liq", "Under Liq."],
+        "Dormant": ["dormant", "Dormant"],
+      };
+      let html = `<div class="summary-card total"><div class="label">Total</div><div class="value">${data.total}</div></div>`;
+      for (const item of data.breakdown) {
+        const [cls, lbl] = labelMap[item.status] || ["other", item.status];
+        html += `<div class="summary-card ${cls}"><div class="label">${lbl}</div><div class="value">${item.count}</div></div>`;
+      }
+      bar.innerHTML = html;
+    } catch {
+      document.getElementById("summary-bar").innerHTML = "";
+    }
+  }
+
+  //  Table 
+  async function loadCompanies() {
+    const msg = document.getElementById("status-msg");
+    const table = document.getElementById("company-table");
+    msg.textContent = "Loading…";
+    table.style.display = "none";
+
+    const params = new URLSearchParams({
+      page: currentPage,
+      limit: LIMIT,
+      ...(currentStatus && { status: currentStatus }),
+      ...(currentState  && { state:  currentState  }),
+    });
+
+    try {
+      const res = await fetch(`${API}/companies?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (!data.data.length) {
+        msg.textContent = "No records found.";
+        document.getElementById("page-info").textContent = "";
+        document.getElementById("btn-prev").disabled = true;
+        document.getElementById("btn-next").disabled = true;
+        return;
+      }
+
+      const tbody = document.getElementById("table-body");
+      const startSerial = (currentPage - 1) * LIMIT + 1;
+      tbody.innerHTML = data.data.map((row, index) => `
+        <tr>
+          <td>${startSerial + index}</td>
+          <td style="font-family:monospace;font-size:0.78rem">${row.cin || '<span style="color:#aaa">—</span>'} ${!row.cin_valid ? '<span class="flag" title="Missing or invalid CIN">⚠</span>' : ''}</td>
+          <td><strong>${row.company_name || "—"}</strong></td>
+          <td>${badge(row.status)}</td>
+          <td>${row.state || "—"}</td>
+          <td>${fmtDate(row.incorporation_date)}</td>
+          <td>${row.director_1 || "—"}</td>
+          <td>${row.director_2 || '<span style="color:#aaa">—</span>'}</td>
+          <td style="text-align:right">${row.paid_up_capital != null ? row.paid_up_capital.toLocaleString("en-IN") : "—"}</td>
+          <td>${fmtDate(row.last_filing_date)}</td>
+          <td>${row.email || "—"} ${row.email && !row.email_valid ? '<span class="flag" title="Invalid email">⚠</span>' : ''}</td>
+        </tr>
+      `).join("");
+
+      msg.textContent = "";
+      table.style.display = "";
+      document.getElementById("page-info").textContent =
+        `Page ${data.page} of ${data.totalPages}  (${data.total} records)`;
+      document.getElementById("btn-prev").disabled = data.page <= 1;
+      document.getElementById("btn-next").disabled = data.page >= data.totalPages;
+    } catch (err) {
+      msg.textContent = `Error: ${err.message}. Is the API running?`;
+    }
+  }
+
+  function badge(status) {
+    const cls = {
+      "Active": "Active",
+      "Strike Off": "StrikeOff",
+      "Under Liquidation": "UnderLiquidation",
+      "Dormant": "Dormant",
+    }[status] || "other";
+    return `<span class="badge ${cls}">${status || "—"}</span>`;
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '<span style="color:#aaa">—</span>';
+    return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  // Controls 
+  function search() {
+    currentStatus = document.getElementById("filter-status").value;
+    currentState  = document.getElementById("filter-state").value.trim();
+    currentPage = 1;
+    loadCompanies();
+  }
+
+  function reset() {
+    document.getElementById("filter-status").value = "";
+    document.getElementById("filter-state").value = "";
+    currentStatus = "";
+    currentState = "";
+    currentPage = 1;
+    loadCompanies();
+  }
+
+  function changePage(delta) {
+    currentPage += delta;
+    loadCompanies();
+  }
+
+  // Init 
+  loadSummary();
+  loadCompanies();
+</script>
+</body>
+</html>
