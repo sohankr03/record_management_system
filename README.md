@@ -151,11 +151,3 @@ The compound index means `GET /companies?status=Active&state=Maharashtra`
 performs an index scan rather than a full collection scan.
 
 ---
-
-## What I'd Change With More Time
-
-- **Unique index on CIN** with duplicate detection (currently sparse, not unique)
-- **Fuzzy status matching** using ML or edit-distance for edge cases like "Struck Off" vs "Strike Off"
-- **Date ambiguity resolution**: `03/07/2012` could be March 7 or July 3 — without ground truth, we can't know which format a given row uses
-- **Pagination cursor** instead of `skip()` for large datasets (skip is O(n))
-- **Environment variables** via `.env` file for MONGO_URI and PORT
