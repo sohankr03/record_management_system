@@ -17,7 +17,7 @@ A full-stack pipeline: CSV → MongoDB → Node.js API → HTML frontend.
 ## Project Structure
 
 ```
-filesure-project/
+record_management_system/
 ├── ingestion/
 │   ├── ingest.py            # Python data cleaning + MongoDB loader
 │   ├── requirements.txt

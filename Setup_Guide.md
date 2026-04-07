@@ -38,7 +38,7 @@ MongoDB is the database where the company records will be saved.
 Now that you have the required software installed, running the project is incredibly simple.
 
 1. Ensure your `company_records.csv` file is inside the **`ingestion`** folder.
-2. Go to the main project folder (`filesure-project`).
+2. Go to the main project folder (`record_management_system`).
 3. You will see a file named **`run_project.bat`** (it might just optionally show as `run_project` with a gear/window icon).
 4. **Double-click** `run_project.bat`.
 
